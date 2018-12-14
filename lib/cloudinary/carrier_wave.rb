@@ -40,7 +40,8 @@ module Cloudinary::CarrierWave
     if args.first && !args.first.is_a?(Hash)
       super
     else
-      options = args.extract_options!
+      options = merge_cloudinary_connection_details({})
+      options = options.merge(args.extract_options!)
       if self.blank?
         url = self.default_url
         return url if !url.blank?
@@ -103,7 +104,7 @@ module Cloudinary::CarrierWave
       from_public_id = [from_public_id, self.format].join(".")
       to_public_id = [to_public_id, self.format].join(".")
     end
-    Cloudinary::Uploader.rename(from_public_id, to_public_id, :type=>self.storage_type, :resource_type=>self.resource_type, :overwrite=>overwrite)
+    Cloudinary::Uploader.rename(from_public_id, to_public_id, merge_cloudinary_connection_details({:type=>self.storage_type, :resource_type=>self.resource_type, :overwrite=>overwrite}))
     storage.store_cloudinary_identifier(@stored_version, [@public_id, self.format].join("."))
   end
 
@@ -117,6 +118,14 @@ module Cloudinary::CarrierWave
 
   def process!(new_file=nil)
     # Do nothing
+  end
+
+  def merge_cloudinary_connection_details(hash)
+    details = {}
+    if self.class.respond_to?(:cloudinary_connection_details)
+      details = self.class.cloudinary_connection_details
+    end
+    return hash.merge(details)
   end
 
   SANITIZE_REGEXP = CarrierWave::SanitizedFile.respond_to?(:sanitize_regexp) ? CarrierWave::SanitizedFile.sanitize_regexp : /[^a-zA-Z0-9\.\-\+_]/
