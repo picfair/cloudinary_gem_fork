@@ -77,7 +77,10 @@ class Cloudinary::Static
 
     # ## Cloudinary::Utils support ###
     def public_id_and_resource_type_from_path(path)
-      @metadata ||= build_metadata
+      if @metadata.nil? || (Rails.env.development? && @metadata_last_built_at < File.mtime(metadata_file_path))
+        @metadata_last_built_at = Time.now
+        @metadata = build_metadata
+      end
       # path = path.sub(/^\//, '')
       prefix = public_prefixes.find {|prefix| @metadata[File.join(prefix, path)]}
       if prefix
